@@ -4,9 +4,9 @@ use ddk::node::State as _;
 use thunder::{Miner, Node, ThunderState, Wallet};
 
 pub struct App {
-    node: Node,
-    wallet: Wallet,
-    miner: Miner,
+    pub node: Node,
+    pub wallet: Wallet,
+    pub miner: Miner,
 }
 
 impl App {
