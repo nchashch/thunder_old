@@ -105,3 +105,7 @@ pub enum Error {
 }
 
 impl ddk::node::CustomError for Error {}
+
+pub type Node = ddk::node::Node<ddk::authorization::Authorization, Thunder, ThunderState>;
+pub type Wallet = ddk::wallet::Wallet<Thunder>;
+pub type Miner = ddk::miner::Miner<ddk::authorization::Authorization, Thunder>;
