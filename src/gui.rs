@@ -1,9 +1,10 @@
 use crate::app::App;
-use eframe::egui;
+use eframe::egui::{self};
 
 pub struct EguiApp {
     app: App,
     set_seed: SetSeed,
+    miner: Miner,
 }
 
 impl EguiApp {
@@ -16,17 +17,46 @@ impl EguiApp {
         Self {
             app,
             set_seed: SetSeed::default(),
+            miner: Miner::default(),
         }
     }
 }
 
 impl eframe::App for EguiApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            egui::Window::new("Set Seed").show(ctx, |ui| {
-                self.set_seed.show(&mut self.app, ui);
-            });
+        egui::CentralPanel::default().show(ctx, |_ui| {
+            if self.app.wallet.has_seed().unwrap_or(false) {
+                egui::Window::new("Miner").show(ctx, |ui| {
+                    self.miner.show(&mut self.app, ui);
+                });
+            } else {
+                egui::Window::new("Set Seed").show(ctx, |ui| {
+                    self.set_seed.show(&mut self.app, ui);
+                });
+            }
         });
+    }
+}
+
+struct Miner;
+
+impl Default for Miner {
+    fn default() -> Self {
+        Self
+    }
+}
+
+impl Miner {
+    fn show(&mut self, app: &mut App, ui: &mut egui::Ui) {
+        let block_height = app.node.get_height().unwrap_or(0);
+        let best_hash = app.node.get_best_hash().unwrap_or([0; 32].into());
+        ui.add(egui::Label::new(format!("Block height: {block_height}")).wrap(false));
+        ui.add(egui::Label::new(format!("Best hash: {best_hash}")).wrap(false));
+        if ui.button("mine").clicked() {
+            app.mine_tx
+                .try_send(())
+                .expect("failed to send () to mine_tx");
+        }
     }
 }
 
@@ -60,16 +90,18 @@ impl SetSeed {
         let passphrase_edit = egui::TextEdit::singleline(&mut self.passphrase)
             .hint_text("passphrase")
             .password(true)
-            .desired_width(f32::INFINITY)
             .clip_text(false);
         ui.add(passphrase_edit);
-        if ui.button("set").clicked() {
-            let mnemonic =
-                bip39::Mnemonic::from_phrase(&self.seed, bip39::Language::English).unwrap();
+        let mnemonic = bip39::Mnemonic::from_phrase(&self.seed, bip39::Language::English);
+        if ui
+            .add_enabled(mnemonic.is_ok(), egui::Button::new("set"))
+            .clicked()
+        {
+            let mnemonic = mnemonic.expect("should never happen");
             let seed = bip39::Seed::new(&mnemonic, &self.passphrase);
             app.wallet
-                .set_seed(seed.as_bytes().try_into().unwrap())
-                .unwrap();
+                .set_seed(seed.as_bytes().try_into().expect("seed it not 64 bytes"))
+                .expect("failed to set HD wallet seed");
         }
     }
 }
