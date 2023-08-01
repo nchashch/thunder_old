@@ -53,9 +53,7 @@ impl Miner {
         ui.add(egui::Label::new(format!("Block height: {block_height}")).wrap(false));
         ui.add(egui::Label::new(format!("Best hash: {best_hash}")).wrap(false));
         if ui.button("mine").clicked() {
-            app.mine_tx
-                .try_send(())
-                .expect("failed to send () to mine_tx");
+            app.mine();
         }
     }
 }
