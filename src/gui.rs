@@ -1,10 +1,12 @@
 use crate::app::App;
+use ddk::bitcoin;
 use eframe::egui::{self};
 
 pub struct EguiApp {
     app: App,
     set_seed: SetSeed,
     miner: Miner,
+    deposit: Deposit,
 }
 
 impl EguiApp {
@@ -18,6 +20,7 @@ impl EguiApp {
             app,
             set_seed: SetSeed::default(),
             miner: Miner::default(),
+            deposit: Deposit::default(),
         }
     }
 }
@@ -29,12 +32,58 @@ impl eframe::App for EguiApp {
                 egui::Window::new("Miner").show(ctx, |ui| {
                     self.miner.show(&mut self.app, ui);
                 });
+                egui::Window::new("Deposit").show(ctx, |ui| {
+                    self.deposit.show(&mut self.app, ui);
+                });
             } else {
                 egui::Window::new("Set Seed").show(ctx, |ui| {
                     self.set_seed.show(&mut self.app, ui);
                 });
             }
         });
+    }
+}
+
+struct Deposit {
+    amount: String,
+    fee: String,
+}
+
+impl Default for Deposit {
+    fn default() -> Self {
+        Self {
+            amount: "".into(),
+            fee: "".into(),
+        }
+    }
+}
+
+impl Deposit {
+    fn show(&mut self, app: &mut App, ui: &mut egui::Ui) {
+        ui.horizontal(|ui| {
+            let amount_edit =
+                egui::TextEdit::singleline(&mut self.amount).hint_text("deposit amount");
+            ui.add(amount_edit);
+            ui.label("BTC");
+        });
+        ui.horizontal(|ui| {
+            let fee_edit = egui::TextEdit::singleline(&mut self.fee).hint_text("deposit fee");
+            ui.add(fee_edit);
+            ui.label("BTC");
+        });
+
+        let amount = bitcoin::Amount::from_str_in(&self.amount, bitcoin::Denomination::Bitcoin);
+        let fee = bitcoin::Amount::from_str_in(&self.fee, bitcoin::Denomination::Bitcoin);
+
+        if ui
+            .add_enabled(amount.is_ok() && fee.is_ok(), egui::Button::new("deposit"))
+            .clicked()
+        {
+            app.deposit(
+                amount.expect("should not happen"),
+                fee.expect("should not happen"),
+            );
+        }
     }
 }
 

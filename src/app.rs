@@ -1,6 +1,8 @@
 use crate::cli::Config;
 use crate::thunder;
 use ddk::bitcoin;
+use ddk::drivechain::MainClient;
+use ddk::jsonrpsee;
 use ddk::node::State as _;
 use thunder::{Miner, Node, ThunderState, Wallet};
 
@@ -71,6 +73,24 @@ impl App {
             Ok(())
         })
     }
+
+    pub fn deposit(&mut self, amount: bitcoin::Amount, fee: bitcoin::Amount) -> Result<(), Error> {
+        self.runtime.block_on(async {
+            let address = self.wallet.get_new_address().unwrap();
+            let address = ddk::format_deposit_address(&format!("{address}"));
+            self.miner
+                .drivechain
+                .client
+                .createsidechaindeposit(
+                    ThunderState::THIS_SIDECHAIN,
+                    &address,
+                    amount.into(),
+                    fee.into(),
+                )
+                .await?;
+            Ok(())
+        })
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -85,4 +105,6 @@ pub enum Error {
     Drivechain(#[from] ddk::drivechain::Error),
     #[error("io error")]
     Io(#[from] std::io::Error),
+    #[error("jsonrpsee error")]
+    Jsonrpsee(#[from] jsonrpsee::core::Error),
 }
