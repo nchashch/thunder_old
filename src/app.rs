@@ -1,15 +1,19 @@
+use std::collections::HashMap;
+
 use crate::cli::Config;
 use crate::thunder;
 use ddk::bitcoin;
 use ddk::drivechain::MainClient;
 use ddk::jsonrpsee;
 use ddk::node::State as _;
-use thunder::{Miner, Node, ThunderState, Wallet};
+use ddk::types::{OutPoint, Output};
+use thunder::{Miner, Node, Thunder, ThunderState, Wallet};
 
 pub struct App {
     pub node: Node,
     pub wallet: Wallet,
     pub miner: Miner,
+    pub utxos: HashMap<OutPoint, Output<Thunder>>,
     runtime: tokio::runtime::Runtime,
 }
 
@@ -29,10 +33,23 @@ impl App {
             };
             Ok(node)
         })?;
+        let node0 = node.clone();
+        let wallet0 = wallet.clone();
+        let utxos = {
+            let mut utxos = wallet.get_utxos()?;
+            let transactions = node.get_all_transactions()?;
+            for transaction in &transactions {
+                for input in &transaction.transaction.inputs {
+                    utxos.remove(input);
+                }
+            }
+            utxos
+        };
         Ok(Self {
             node,
             wallet,
             miner,
+            utxos,
             runtime,
         })
     }
@@ -70,13 +87,39 @@ impl App {
             if let Ok(Some((header, body))) = self.miner.confirm_bmm().await {
                 self.node.submit_block(&header, &body).await?;
             }
-            Ok(())
-        })
+
+            Ok::<(), Error>(())
+        })?;
+        self.update_wallet()?;
+        self.update_utxos()?;
+        Ok(())
+    }
+
+    fn update_wallet(&mut self) -> Result<(), Error> {
+        let addresses = self.wallet.get_addresses()?;
+        let utxos = self.node.get_utxos_by_addresses(&addresses)?;
+        let outpoints: Vec<_> = self.wallet.get_utxos()?.into_keys().collect();
+        let spent = self.node.get_spent_utxos(&outpoints)?;
+        self.wallet.put_utxos(&utxos)?;
+        self.wallet.delete_utxos(&spent)?;
+        Ok(())
+    }
+
+    fn update_utxos(&mut self) -> Result<(), Error> {
+        let mut utxos = self.wallet.get_utxos()?;
+        let transactions = self.node.get_all_transactions()?;
+        for transaction in &transactions {
+            for input in &transaction.transaction.inputs {
+                utxos.remove(input);
+            }
+        }
+        self.utxos = utxos;
+        Ok(())
     }
 
     pub fn deposit(&mut self, amount: bitcoin::Amount, fee: bitcoin::Amount) -> Result<(), Error> {
         self.runtime.block_on(async {
-            let address = self.wallet.get_new_address().unwrap();
+            let address = self.wallet.get_new_address()?;
             let address = ddk::format_deposit_address(&format!("{address}"));
             self.miner
                 .drivechain

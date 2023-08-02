@@ -1,30 +1,36 @@
 use crate::app::App;
+use ddk::bitcoin;
+use ddk::types::GetValue;
 use eframe::egui;
 
 mod deposit;
 mod miner;
 mod seed;
-mod tabs;
+mod utxo_creator;
+mod utxo_selector;
 
 use deposit::Deposit;
 use miner::Miner;
 use seed::SetSeed;
-use tabs::Tabs;
+use utxo_selector::{show_utxo, UtxoSelector};
+
+use self::utxo_creator::UtxoCreator;
 
 pub struct EguiApp {
     app: App,
     set_seed: SetSeed,
     miner: Miner,
     deposit: Deposit,
-    tabs: Tabs<Tab>,
+    tab: Tab,
+    utxo_selector: UtxoSelector,
+    utxo_creator: UtxoCreator,
 }
 
-#[derive(strum_macros::EnumIter, strum_macros::Display, Eq, PartialEq)]
+#[derive(Eq, PartialEq)]
 enum Tab {
-    #[strum(to_string = "transaction builder")]
     TransactionBuilder,
-    #[strum(to_string = "mempool explorer")]
     MemPool,
+    BlockExplorer,
 }
 
 impl EguiApp {
@@ -33,13 +39,14 @@ impl EguiApp {
         // Restore app state using cc.storage (requires the "persistence" feature).
         // Use the cc.gl (a glow::Context) to create graphics shaders and buffers that you can use
         // for e.g. egui::PaintCallback.
-        let tabs = Tabs::new(Tab::TransactionBuilder);
         Self {
             app,
             set_seed: SetSeed::default(),
             miner: Miner::default(),
             deposit: Deposit::default(),
-            tabs,
+            utxo_selector: UtxoSelector::default(),
+            utxo_creator: UtxoCreator::default(),
+            tab: Tab::TransactionBuilder,
         }
     }
 }
@@ -49,7 +56,13 @@ impl eframe::App for EguiApp {
         if self.app.wallet.has_seed().unwrap_or(false) {
             egui::TopBottomPanel::top("tabs").show(ctx, |ui| {
                 ui.horizontal(|ui| {
-                    self.tabs.show(ui);
+                    ui.selectable_value(
+                        &mut self.tab,
+                        Tab::TransactionBuilder,
+                        "transaction builder",
+                    );
+                    ui.selectable_value(&mut self.tab, Tab::MemPool, "mempool explorer");
+                    ui.selectable_value(&mut self.tab, Tab::BlockExplorer, "block explorer");
                 });
             });
             egui::TopBottomPanel::bottom("util").show(ctx, |ui| {
@@ -59,19 +72,64 @@ impl eframe::App for EguiApp {
                     self.deposit.show(&mut self.app, ui);
                 });
             });
-            egui::CentralPanel::default().show(ctx, |ui| match self.tabs.current {
+            egui::CentralPanel::default().show(ctx, |ui| match self.tab {
                 Tab::TransactionBuilder => {
                     egui::SidePanel::left("spend_utxo")
-                        .exact_width(150.)
+                        .exact_width(250.)
                         .resizable(false)
                         .show_inside(ui, |ui| {
-                            ui.heading("Spend UTXO");
+                            self.utxo_selector.show(&mut self.app, ui);
                         });
-                    egui::SidePanel::right("create_utxo")
-                        .exact_width(150.)
+                    egui::SidePanel::left("value_in")
+                        .exact_width(250.)
                         .resizable(false)
                         .show_inside(ui, |ui| {
-                            ui.heading("Create UTXO");
+                            ui.heading("Value In");
+                            let utxos = &self.app.utxos;
+                            let total: u64 = utxos
+                                .iter()
+                                .filter(|(outpoint, _)| {
+                                    self.utxo_selector.selected.contains(outpoint)
+                                })
+                                .map(|(_, output)| output.get_value())
+                                .sum();
+                            let mut utxos: Vec<_> = utxos
+                                .into_iter()
+                                .filter(|(outpoint, _)| {
+                                    self.utxo_selector.selected.contains(outpoint)
+                                })
+                                .collect();
+                            utxos.sort_by_key(|(outpoint, _)| format!("{outpoint}"));
+                            ui.separator();
+                            ui.monospace(format!("Total: {}", bitcoin::Amount::from_sat(total)));
+                            ui.separator();
+                            egui::Grid::new("utxos").striped(true).show(ui, |ui| {
+                                for (outpoint, output) in utxos {
+                                    ui.horizontal(|ui| {
+                                        show_utxo(ui, outpoint, output);
+                                        if ui.button("remove").clicked() {
+                                            self.utxo_selector.selected.remove(outpoint);
+                                        }
+                                    });
+                                    ui.end_row();
+                                }
+                            });
+                        });
+                    egui::SidePanel::left("value_out")
+                        .exact_width(250.)
+                        .resizable(false)
+                        .show_inside(ui, |ui| {
+                            ui.heading("Value Out");
+                            ui.separator();
+                            ui.monospace("Total: 0 BTC");
+                            ui.separator();
+                        });
+                    egui::SidePanel::left("create_utxo")
+                        .exact_width(450.)
+                        .resizable(false)
+                        .show_separator_line(false)
+                        .show_inside(ui, |ui| {
+                            self.utxo_creator.show(&mut self.app, ui);
                         });
                     egui::CentralPanel::default().show_inside(ui, |ui| {});
                 }
@@ -85,6 +143,24 @@ impl eframe::App for EguiApp {
                                 for i in 0..30 {
                                     ui.horizontal(|ui| {
                                         ui.monospace(format!("transaction {i}"));
+                                    });
+                                    ui.end_row();
+                                }
+                            });
+                            ui.button("next");
+                        });
+                    egui::CentralPanel::default().show_inside(ui, |ui| {});
+                }
+                Tab::BlockExplorer => {
+                    egui::SidePanel::left("block_picker")
+                        .exact_width(150.)
+                        .resizable(false)
+                        .show_inside(ui, |ui| {
+                            ui.button("previous");
+                            egui::Grid::new("blocks").show(ui, |ui| {
+                                for i in 0..30 {
+                                    ui.horizontal(|ui| {
+                                        ui.monospace(format!("block {i}"));
                                     });
                                     ui.end_row();
                                 }
