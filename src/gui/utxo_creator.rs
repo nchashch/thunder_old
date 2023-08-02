@@ -1,5 +1,7 @@
 use crate::app::App;
+use crate::thunder::Thunder;
 use ddk::bitcoin;
+use ddk::types::{Content, Output};
 use eframe::egui;
 
 pub struct UtxoCreator {
@@ -58,7 +60,13 @@ impl UtxoCreator {
         ui.horizontal(|ui| {
             ui.monospace("Address:     ");
             ui.add(egui::TextEdit::singleline(&mut self.address));
-            ui.button("generate");
+            if ui.button("generate").clicked() {
+                self.address = app
+                    .wallet
+                    .get_new_address()
+                    .map(|address| format!("{address}"))
+                    .unwrap_or("".into());
+            }
         });
         if self.utxo_type == UtxoType::Withdrawal {
             ui.horizontal(|ui| {
@@ -72,6 +80,31 @@ impl UtxoCreator {
                 ui.monospace("BTC");
             });
         }
-        ui.button("create");
+        ui.horizontal(|ui| {
+            match self.utxo_type {
+                UtxoType::Regular => {
+                    let address: Option<ddk::types::Address> = self.address.parse().ok();
+                    let value: Option<bitcoin::Amount> =
+                        bitcoin::Amount::from_str_in(&self.value, bitcoin::Denomination::Bitcoin)
+                            .ok();
+                    if ui
+                        .add_enabled(
+                            address.is_some() && value.is_some(),
+                            egui::Button::new("create"),
+                        )
+                        .clicked()
+                    {
+                        let utxo = Output {
+                            address: address.expect("should not happen"),
+                            content: Content::Value(value.expect("should not happen").to_sat()),
+                        };
+                        app.transaction.outputs.push(utxo);
+                    }
+                }
+                UtxoType::Withdrawal => {}
+            }
+            let num_addresses = app.wallet.get_num_addresses().unwrap();
+            ui.label(format!("{num_addresses} addresses generated"));
+        });
     }
 }

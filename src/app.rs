@@ -6,7 +6,7 @@ use ddk::bitcoin;
 use ddk::drivechain::MainClient;
 use ddk::jsonrpsee;
 use ddk::node::State as _;
-use ddk::types::{OutPoint, Output};
+use ddk::types::{OutPoint, Output, Transaction};
 use thunder::{Miner, Node, Thunder, ThunderState, Wallet};
 
 pub struct App {
@@ -14,6 +14,7 @@ pub struct App {
     pub wallet: Wallet,
     pub miner: Miner,
     pub utxos: HashMap<OutPoint, Output<Thunder>>,
+    pub transaction: Transaction<Thunder>,
     runtime: tokio::runtime::Runtime,
 }
 
@@ -33,8 +34,6 @@ impl App {
             };
             Ok(node)
         })?;
-        let node0 = node.clone();
-        let wallet0 = wallet.clone();
         let utxos = {
             let mut utxos = wallet.get_utxos()?;
             let transactions = node.get_all_transactions()?;
@@ -50,6 +49,10 @@ impl App {
             wallet,
             miner,
             utxos,
+            transaction: Transaction {
+                inputs: vec![],
+                outputs: vec![],
+            },
             runtime,
         })
     }
