@@ -6,12 +6,14 @@ use ddk::types::GetValue;
 use eframe::egui;
 
 mod deposit;
+mod mempool_explorer;
 mod miner;
 mod seed;
 mod utxo_creator;
 mod utxo_selector;
 
 use deposit::Deposit;
+use mempool_explorer::MemPoolExplorer;
 use miner::Miner;
 use seed::SetSeed;
 use utxo_selector::{show_utxo, UtxoSelector};
@@ -26,6 +28,7 @@ pub struct EguiApp {
     tab: Tab,
     utxo_selector: UtxoSelector,
     utxo_creator: UtxoCreator,
+    mempool_explorer: MemPoolExplorer,
 }
 
 #[derive(Eq, PartialEq)]
@@ -48,6 +51,7 @@ impl EguiApp {
             deposit: Deposit::default(),
             utxo_selector: UtxoSelector::default(),
             utxo_creator: UtxoCreator::default(),
+            mempool_explorer: MemPoolExplorer::default(),
             tab: Tab::TransactionBuilder,
         }
     }
@@ -197,24 +201,7 @@ impl eframe::App for EguiApp {
                         });
                 }
                 Tab::MemPool => {
-                    egui::SidePanel::left("transaction_picker")
-                        .exact_width(150.)
-                        .resizable(false)
-                        .show_inside(ui, |ui| {
-                            ui.button("previous");
-                            egui::Grid::new("transactions").show(ui, |ui| {
-                                for i in 0..30 {
-                                    ui.horizontal(|ui| {
-                                        ui.monospace(format!("transaction {i}"));
-                                    });
-                                    ui.end_row();
-                                }
-                            });
-                            ui.button("next");
-                        });
-                    egui::CentralPanel::default().show_inside(ui, |ui| {
-                        ui.heading("Under Construction");
-                    });
+                            self.mempool_explorer.show(&mut self.app, ui);
                 }
                 Tab::BlockExplorer => {
                     egui::SidePanel::left("block_picker")
