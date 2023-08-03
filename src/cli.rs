@@ -5,15 +5,20 @@ use std::{net::SocketAddr, path::PathBuf};
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
     /// data directory for storing blockchain data and wallet, defaults to ~/.local/share
+    #[arg(short, long)]
     pub datadir: Option<PathBuf>,
     /// address to use for P2P networking, defaults to 127.0.0.1:4000
+    #[arg(short, long)]
     pub net_addr: Option<String>,
     /// address to connect to mainchain node RPC server, defaults to 127.0.0.1:18443
+    #[arg(short, long)]
     pub main_addr: Option<String>,
     /// mainchain node RPC user, defaults to "user"
-    pub main_user: Option<String>,
+    #[arg(short, long)]
+    pub user_main: Option<String>,
     /// mainchain node RPC password, defaults to "password"
-    pub main_password: Option<String>,
+    #[arg(short, long)]
+    pub password_main: Option<String>,
 }
 
 pub struct Config {
@@ -45,9 +50,9 @@ impl Cli {
                 dirs::data_dir().expect("couldn't get default datadir, specify --datadir")
             })
             .join("thunder");
-        let main_user = self.main_user.clone().unwrap_or_else(|| "user".into());
+        let main_user = self.user_main.clone().unwrap_or_else(|| "user".into());
         let main_password = self
-            .main_password
+            .password_main
             .clone()
             .unwrap_or_else(|| "password".into());
         Ok(Config {
