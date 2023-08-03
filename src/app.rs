@@ -57,6 +57,18 @@ impl App {
         })
     }
 
+    pub fn sign_and_send(&mut self) -> Result<(), Error> {
+        let authorized_transaction = self.wallet.authorize(self.transaction.clone())?;
+        self.runtime
+            .block_on(self.node.submit_transaction(&authorized_transaction))?;
+        self.transaction = Transaction {
+            inputs: vec![],
+            outputs: vec![],
+        };
+        self.update_utxos()?;
+        Ok(())
+    }
+
     const EMPTY_BLOCK_BMM_BRIBE: u64 = 1000;
     pub fn mine(&mut self) -> Result<(), Error> {
         self.runtime.block_on(async {

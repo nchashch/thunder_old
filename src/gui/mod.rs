@@ -139,7 +139,6 @@ impl eframe::App for EguiApp {
                         .resizable(false)
                         .show_inside(ui, |ui| {
                             ui.heading("Value Out");
-                            let outputs = &self.app.transaction.outputs;
                             ui.separator();
                             ui.monospace(format!(
                                 "Total: {}",
@@ -185,10 +184,13 @@ impl eframe::App for EguiApp {
                             ui.heading("Transaction");
                             let txid = &format!("{}", self.app.transaction.txid())[0..8];
                             ui.monospace(format!("txid: {txid}"));
-                            if value_in > value_out {
+                            if value_in >= value_out {
                                 let fee = value_in - value_out;
                                 let fee = bitcoin::Amount::from_sat(fee);
                                 ui.monospace(format!("fee:  {fee}"));
+                                if ui.button("sign and send").clicked() {
+                                    self.app.sign_and_send().unwrap_or(());
+                                }
                             } else {
                                 ui.label("Not Enough Value In");
                             }
@@ -210,7 +212,9 @@ impl eframe::App for EguiApp {
                             });
                             ui.button("next");
                         });
-                    egui::CentralPanel::default().show_inside(ui, |ui| {});
+                    egui::CentralPanel::default().show_inside(ui, |ui| {
+                        ui.heading("Under Construction");
+                    });
                 }
                 Tab::BlockExplorer => {
                     egui::SidePanel::left("block_picker")
@@ -228,7 +232,9 @@ impl eframe::App for EguiApp {
                             });
                             ui.button("next");
                         });
-                    egui::CentralPanel::default().show_inside(ui, |ui| {});
+                    egui::CentralPanel::default().show_inside(ui, |ui| {
+                        ui.heading("Under Construction");
+                    });
                 }
             });
         } else {
