@@ -16,19 +16,19 @@ impl GetValue for Thunder {
 pub struct ThunderState;
 
 impl ThunderState {
-    fn transaction_size_limit(_height: u32) -> u64 {
+    pub fn transaction_size_limit(_height: u32) -> u64 {
         1024 * 1024
     }
 
-    fn transaction_sigops_limit(_height: u32) -> u64 {
+    pub fn transaction_sigops_limit(_height: u32) -> u64 {
         8 * 1024
     }
 
-    fn body_size_limit(_height: u32) -> u64 {
+    pub fn body_size_limit(_height: u32) -> u64 {
         8 * 1024 * 1024
     }
 
-    fn body_sigops_limit(_height: u32) -> u64 {
+    pub fn body_sigops_limit(_height: u32) -> u64 {
         8 * 8 * 1024
     }
 }

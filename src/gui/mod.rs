@@ -5,6 +5,7 @@ use ddk::bitcoin;
 use ddk::types::GetValue;
 use eframe::egui;
 
+mod block_explorer;
 mod deposit;
 mod mempool_explorer;
 mod miner;
@@ -12,6 +13,7 @@ mod seed;
 mod utxo_creator;
 mod utxo_selector;
 
+use block_explorer::BlockExplorer;
 use deposit::Deposit;
 use mempool_explorer::MemPoolExplorer;
 use miner::Miner;
@@ -29,12 +31,13 @@ pub struct EguiApp {
     utxo_selector: UtxoSelector,
     utxo_creator: UtxoCreator,
     mempool_explorer: MemPoolExplorer,
+    block_explorer: BlockExplorer,
 }
 
 #[derive(Eq, PartialEq)]
 enum Tab {
     TransactionBuilder,
-    MemPool,
+    MemPoolExplorer,
     BlockExplorer,
 }
 
@@ -44,6 +47,7 @@ impl EguiApp {
         // Restore app state using cc.storage (requires the "persistence" feature).
         // Use the cc.gl (a glow::Context) to create graphics shaders and buffers that you can use
         // for e.g. egui::PaintCallback.
+        let height = app.node.get_height().unwrap_or(0);
         Self {
             app,
             set_seed: SetSeed::default(),
@@ -52,6 +56,7 @@ impl EguiApp {
             utxo_selector: UtxoSelector::default(),
             utxo_creator: UtxoCreator::default(),
             mempool_explorer: MemPoolExplorer::default(),
+            block_explorer: BlockExplorer::new(height),
             tab: Tab::TransactionBuilder,
         }
     }
@@ -67,7 +72,7 @@ impl eframe::App for EguiApp {
                         Tab::TransactionBuilder,
                         "transaction builder",
                     );
-                    ui.selectable_value(&mut self.tab, Tab::MemPool, "mempool explorer");
+                    ui.selectable_value(&mut self.tab, Tab::MemPoolExplorer, "mempool explorer");
                     ui.selectable_value(&mut self.tab, Tab::BlockExplorer, "block explorer");
                 });
             });
@@ -200,28 +205,11 @@ impl eframe::App for EguiApp {
                             }
                         });
                 }
-                Tab::MemPool => {
-                            self.mempool_explorer.show(&mut self.app, ui);
+                Tab::MemPoolExplorer => {
+                    self.mempool_explorer.show(&mut self.app, ui);
                 }
                 Tab::BlockExplorer => {
-                    egui::SidePanel::left("block_picker")
-                        .exact_width(150.)
-                        .resizable(false)
-                        .show_inside(ui, |ui| {
-                            ui.button("previous");
-                            egui::Grid::new("blocks").show(ui, |ui| {
-                                for i in 0..30 {
-                                    ui.horizontal(|ui| {
-                                        ui.monospace(format!("block {i}"));
-                                    });
-                                    ui.end_row();
-                                }
-                            });
-                            ui.button("next");
-                        });
-                    egui::CentralPanel::default().show_inside(ui, |ui| {
-                        ui.heading("Under Construction");
-                    });
+                    self.block_explorer.show(&mut self.app, ui);
                 }
             });
         } else {

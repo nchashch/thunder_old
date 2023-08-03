@@ -2,6 +2,7 @@ use crate::app::App;
 use ddk::bitcoin;
 use ddk::types::{GetValue, OutPoint};
 use eframe::egui;
+use human_size::{Byte, Kibibyte, Mebibyte, SpecificSize};
 
 pub struct MemPoolExplorer {
     current: usize,
@@ -127,7 +128,25 @@ impl MemPoolExplorer {
                 ui.heading("Viewing");
                 ui.separator();
                 let txid = transaction.transaction.txid();
-                ui.monospace(format!("{txid}"));
+                ui.monospace(format!("Txid:             {txid}"));
+                let transaction_size = bincode::serialize(&transaction).unwrap_or(vec![]).len();
+                let transaction_size = if let Ok(transaction_size) =
+                    SpecificSize::new(transaction_size as f64, Byte)
+                {
+                    let bytes = transaction_size.to_bytes();
+                    if bytes < 1024 {
+                        format!("{transaction_size}")
+                    } else if bytes < 1024 * 1024 {
+                        let transaction_size: SpecificSize<Kibibyte> = transaction_size.into();
+                        format!("{transaction_size}")
+                    } else {
+                        let transaction_size: SpecificSize<Mebibyte> = transaction_size.into();
+                        format!("{transaction_size}")
+                    }
+                } else {
+                    "".into()
+                };
+                ui.monospace(format!("Transaction size: {transaction_size}"));
             });
         } else {
             egui::CentralPanel::default().show_inside(ui, |ui| {
