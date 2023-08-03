@@ -2,8 +2,8 @@
 name = "thunder"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "Example GUI sidechain app built using ddk."
+authors = [ "Nikita Chashchinskii" ]
 
 [dependencies]
 ddk = { git = "https://github.com/LayerTwo-Labs/ddk", rev = "95e033f25852eeac7c74fbc7c78cd2f05154266a" }
