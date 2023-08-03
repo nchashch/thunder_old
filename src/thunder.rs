@@ -34,7 +34,7 @@ impl ThunderState {
 }
 
 impl State<ddk::authorization::Authorization, Thunder> for ThunderState {
-    const THIS_SIDECHAIN: u8 = 0;
+    const THIS_SIDECHAIN: u8 = 1;
     const NUM_DBS: u32 = 5;
 
     type Error = Error;
