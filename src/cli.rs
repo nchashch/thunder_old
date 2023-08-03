@@ -4,15 +4,15 @@ use std::{net::SocketAddr, path::PathBuf};
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
-    /// data directory for storing blockchain data and wallet
+    /// data directory for storing blockchain data and wallet, defaults to ~/.local/share
     pub datadir: Option<PathBuf>,
     /// address to use for P2P networking, defaults to 127.0.0.1:4000
     pub net_addr: Option<String>,
     /// address to connect to mainchain node RPC server, defaults to 127.0.0.1:18443
     pub main_addr: Option<String>,
-    /// mainchain node RPC user
+    /// mainchain node RPC user, defaults to "user"
     pub main_user: Option<String>,
-    /// mainchain node RPC password
+    /// mainchain node RPC password, defaults to "password"
     pub main_password: Option<String>,
 }
 
