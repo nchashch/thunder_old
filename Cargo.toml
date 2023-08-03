@@ -9,7 +9,6 @@ authors = [ "Nikita Chashchinskii" ]
 ddk = { git = "https://github.com/LayerTwo-Labs/ddk", rev = "95e033f25852eeac7c74fbc7c78cd2f05154266a" }
 
 anyhow = "1.0.72"
-project-root = "0.2.2"
 serde = { version = "1.0.179", features = ["derive"] }
 thiserror = "1.0.44"
 tokio = { version = "1.29.1", features = ["rt-multi-thread", "macros"] }
@@ -17,9 +16,5 @@ bincode = "1.3.3"
 clap = { version = "4.3.19", features = ["derive"] }
 dirs = "5.0.1"
 eframe = "0.22.0"
-itertools = "0.11.0"
-rand = "0.8.5"
 tiny-bip39 = "1.0.0"
-sha256 = "1.2.2"
-serde_json = "1.0.104"
 human-size = "0.4.3"
