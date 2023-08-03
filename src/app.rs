@@ -26,9 +26,20 @@ impl App {
             .enable_all()
             .build()?;
         let wallet = Wallet::new(&config.datadir.join("wallet.mdb"))?;
-        let miner = Miner::new(ThunderState::THIS_SIDECHAIN, config.main_addr)?;
+        let miner = Miner::new(
+            ThunderState::THIS_SIDECHAIN,
+            config.main_addr,
+            &config.main_user,
+            &config.main_password,
+        )?;
         let node = runtime.block_on(async {
-            let node = match Node::new(&config.datadir, config.net_addr, config.main_addr) {
+            let node = match Node::new(
+                &config.datadir,
+                config.net_addr,
+                config.main_addr,
+                &config.main_user,
+                &config.main_password,
+            ) {
                 Ok(node) => node,
                 Err(err) => return Err(err),
             };

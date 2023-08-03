@@ -7,12 +7,16 @@ pub struct Cli {
     pub datadir: Option<PathBuf>,
     pub net_addr: Option<String>,
     pub main_addr: Option<String>,
+    pub main_user: Option<String>,
+    pub main_password: Option<String>,
 }
 
 pub struct Config {
     pub datadir: PathBuf,
     pub net_addr: SocketAddr,
     pub main_addr: SocketAddr,
+    pub main_user: String,
+    pub main_password: String,
 }
 
 impl Cli {
@@ -36,10 +40,17 @@ impl Cli {
                 dirs::data_dir().expect("couldn't get default datadir, specify --datadir")
             })
             .join("thunder");
+        let main_user = self.main_user.clone().unwrap_or_else(|| "user".into());
+        let main_password = self
+            .main_password
+            .clone()
+            .unwrap_or_else(|| "password".into());
         Ok(Config {
             datadir,
             net_addr,
             main_addr,
+            main_user,
+            main_password,
         })
     }
 }
