@@ -6,7 +6,7 @@ description = "Example GUI sidechain app built using ddk."
 authors = [ "Nikita Chashchinskii" ]
 
 [dependencies]
-ddk = { git = "https://github.com/LayerTwo-Labs/ddk", rev = "95e033f25852eeac7c74fbc7c78cd2f05154266a" }
+ddk = { git = "https://github.com/LayerTwo-Labs/ddk", rev = "0cb961b678b334f4990bfa36ed45021ffffa7f7a" }
 
 anyhow = "1.0.72"
 serde = { version = "1.0.179", features = ["derive"] }

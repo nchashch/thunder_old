@@ -146,7 +146,7 @@ impl App {
     pub fn deposit(&mut self, amount: bitcoin::Amount, fee: bitcoin::Amount) -> Result<(), Error> {
         self.runtime.block_on(async {
             let address = self.wallet.get_new_address()?;
-            let address = ddk::format_deposit_address(&format!("{address}"));
+            let address = ddk::format_deposit_address(ThunderState::THIS_SIDECHAIN, &format!("{address}"));
             self.miner
                 .drivechain
                 .client

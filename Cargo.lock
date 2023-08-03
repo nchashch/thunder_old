@@ -918,7 +918,7 @@ dependencies = [
 [[package]]
 name = "ddk"
 version = "0.0.1"
-source = "git+https://github.com/LayerTwo-Labs/ddk?rev=95e033f25852eeac7c74fbc7c78cd2f05154266a#95e033f25852eeac7c74fbc7c78cd2f05154266a"
+source = "git+https://github.com/LayerTwo-Labs/ddk?rev=0cb961b678b334f4990bfa36ed45021ffffa7f7a#0cb961b678b334f4990bfa36ed45021ffffa7f7a"
 dependencies = [
  "base64 0.21.2",
  "bincode",
